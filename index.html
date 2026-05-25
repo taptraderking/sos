@@ -51,18 +51,18 @@
   }
 
   .container {
-    padding: 24px 20px;
+    padding: 20px 18px;
     text-align: center;
   }
 
   .alert-title {
     font-family: 'Anton', 'Impact', sans-serif;
-    font-size: clamp(80px, 28vw, 180px);
+    font-size: clamp(70px, 24vw, 160px);
     line-height: 0.9;
     letter-spacing: 0.04em;
     color: var(--red);
     text-shadow: 0 0 40px rgba(255, 0, 51, 0.7);
-    margin: 18px 0 8px;
+    margin: 14px 0 6px;
     animation: flash-title 0.6s ease-in-out infinite;
   }
 
@@ -73,7 +73,7 @@
 
   .sub {
     font-family: 'Anton', 'Impact', sans-serif;
-    font-size: clamp(18px, 5.5vw, 28px);
+    font-size: clamp(16px, 5vw, 24px);
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--white);
@@ -82,54 +82,85 @@
 
   .name-line {
     font-family: 'Anton', 'Impact', sans-serif;
-    font-size: clamp(40px, 11vw, 64px);
+    font-size: clamp(36px, 10vw, 56px);
     color: var(--yellow);
     letter-spacing: 0.05em;
-    margin: 16px 0;
+    margin: 12px 0;
     word-break: break-word;
     line-height: 1;
   }
 
   .timestamp {
     font-family: 'JetBrains Mono', 'Courier New', monospace;
-    font-size: 12px;
+    font-size: 11px;
     color: #ff9999;
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    margin-bottom: 28px;
+    margin-bottom: 20px;
   }
 
   .coords-block {
     background: rgba(255, 0, 51, 0.12);
     border: 2px solid var(--red);
-    padding: 18px 14px;
-    margin: 0 auto 28px;
-    max-width: 92%;
+    padding: 14px 12px;
+    margin: 0 auto 16px;
+    max-width: 94%;
   }
 
   .coords-label {
     font-size: 10px;
     letter-spacing: 0.25em;
     color: #ff9999;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
 
   .coords {
     font-family: 'JetBrains Mono', 'Courier New', monospace;
-    font-size: clamp(16px, 4.5vw, 22px);
+    font-size: clamp(15px, 4.2vw, 20px);
     font-weight: 700;
     color: var(--white);
     word-break: break-all;
   }
 
+  .map-wrap {
+    margin: 0 auto 18px;
+    max-width: 96%;
+    border: 3px solid var(--red);
+    background: #000;
+    position: relative;
+    aspect-ratio: 4 / 3;
+    max-height: 340px;
+  }
+
+  .map-wrap iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+  }
+
+  .map-badge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: var(--red);
+    color: var(--white);
+    font-family: 'Anton', sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    padding: 6px 12px;
+    z-index: 2;
+    pointer-events: none;
+  }
+
   .btn {
     display: block;
-    width: calc(100% - 40px);
+    width: calc(100% - 32px);
     max-width: 480px;
-    margin: 14px auto;
-    padding: 24px 16px;
+    margin: 12px auto;
+    padding: 22px 14px;
     font-family: 'Anton', 'Impact', sans-serif;
-    font-size: clamp(22px, 6vw, 28px);
+    font-size: clamp(20px, 5.5vw, 26px);
     letter-spacing: 0.1em;
     text-transform: uppercase;
     text-decoration: none;
@@ -154,8 +185,8 @@
     color: #888;
     border-color: #444;
     font-size: 13px;
-    padding: 14px;
-    margin-top: 32px;
+    padding: 12px;
+    margin-top: 24px;
     border-width: 1px;
     text-transform: lowercase;
     letter-spacing: 0.2em;
@@ -225,7 +256,7 @@
 <div class="activate-overlay" id="activateOverlay">
   <div class="activate-text">🚨 SOS ALERT 🚨</div>
   <button class="activate-btn" id="activateBtn">ACTIVATE</button>
-  <div class="activate-sub">Tap to view emergency details and sound siren</div>
+  <div class="activate-sub">Tap to sound siren and view emergency details</div>
 </div>
 
 <div class="stripes"></div>
@@ -242,7 +273,12 @@
     <div class="coords" id="coords">—</div>
   </div>
 
-  <a class="btn" id="mapBtn" href="#" target="_blank" rel="noopener">📍 Open Location in Maps</a>
+  <div class="map-wrap" id="mapWrap">
+    <div class="map-badge">📍 LIVE LOCATION</div>
+    <iframe id="mapFrame" referrerpolicy="no-referrer-when-downgrade" loading="lazy"></iframe>
+  </div>
+
+  <a class="btn" id="mapBtn" href="#" target="_blank" rel="noopener">📍 Open in Maps App</a>
   <a class="btn call" id="callBtn" href="#">📞 Call Now</a>
 
   <button class="btn-silence" id="silenceBtn">silence siren</button>
@@ -264,10 +300,18 @@
 
   if (lat && lng) {
     document.getElementById('coords').textContent = `${parseFloat(lat).toFixed(5)}°, ${parseFloat(lng).toFixed(5)}°`;
-    document.getElementById('mapBtn').href = `https://www.google.com/maps?q=${lat},${lng}`;
+
+    // Embedded map - no API key needed
+    document.getElementById('mapFrame').src =
+      `https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
+
+    // Deep link - https URL auto-opens Google Maps app on Android (if installed/default)
+    // and on iOS (if installed). Falls back to web Maps if app not present.
+    document.getElementById('mapBtn').href = `https://maps.google.com/?q=${lat},${lng}`;
   } else {
     document.getElementById('coords').textContent = 'NO LOCATION DATA';
     document.getElementById('mapBtn').style.display = 'none';
+    document.getElementById('mapWrap').style.display = 'none';
   }
 
   if (phone) {
@@ -326,8 +370,9 @@
     sirenOn = false;
     if (vibrateInterval) clearInterval(vibrateInterval);
     if (navigator.vibrate) navigator.vibrate(0);
-    document.getElementById('silenceBtn').textContent = 'siren silenced';
-    document.getElementById('silenceBtn').disabled = true;
+    const btn = document.getElementById('silenceBtn');
+    btn.textContent = 'siren silenced';
+    btn.disabled = true;
   }
 
   function startVibrate() {
@@ -348,7 +393,7 @@
   document.getElementById('activateBtn').addEventListener('click', activate);
   document.getElementById('silenceBtn').addEventListener('click', stopSiren);
 
-  // Also activate on any first tap on body (helps when overlay is dismissed)
+  // Auto-activate on any first touch anywhere on the page
   document.body.addEventListener('touchstart', function once() {
     if (!sirenOn) activate();
     document.body.removeEventListener('touchstart', once);
